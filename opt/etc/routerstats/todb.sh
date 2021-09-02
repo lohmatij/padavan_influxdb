@@ -1,7 +1,8 @@
 #!/bin/sh
+DIR=$(dirname "$0")
 
 #should set TOKEN, SERVER, BUCKET and ORG variables
-. secrets 
+. "$DIR"/secrets 
 
 if [ $# -lt 2 ]; then
     echo "Usage: $0 \"series NAME\"  \"line data\""
