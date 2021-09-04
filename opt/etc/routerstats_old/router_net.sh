@@ -14,10 +14,10 @@ echo "$new_epoch" > "$old_epoch_file"
 interval=$(expr "$new_epoch" - "$old_epoch") # seconds since last sample
 
 name="router_net"
-columns="recv_mbps recv_errs recv_drop trans_mbps trans_errs trans_drop"
+columns="interface recv_mbps recv_errs recv_drop trans_mbps trans_errs trans_drop"
 
 if [ -f "$new" ]; then
-    awk -v old="$old" -v interval=$interval -v maxint=$maxint '{
+    awk -v old="$old" -v interval="$interval" -v maxint=$maxint '{
         getline line < old
         split(line, a)
         if( $1 == a[1] ) {
@@ -27,14 +27,13 @@ if [ -f "$new" ]; then
             if(trans_bytes < 0) {trans_bytes = trans_bytes + maxint} # maxint counter rollover
             recv_mbps  = (8 * (recv_bytes) / interval) / 1048576     # mbits per second
             trans_mbps = (8 * (trans_bytes) / interval) / 1048576    # mbits per second
-            print $1, recv_mbps, $3 - a[3], $4 - a[4], trans_mbps, $6 - a[6], $7 - a[7]
+            print "\x22"$1"\x22", recv_mbps, $3 - a[3], $4 - a[4], trans_mbps, $6 - a[6], $7 - a[7]
         }
     }' "$new"  | while read -r line; do
-        points=$( echo "$line" | sed 's/^[^ ]* //g' )
-		interface=$( echo "$line" | sed 's/ .*$//g' )
-		"$dir"/todb.sh "$name" "$columns" "$points" "interface=$interface"
+        points="$line"
+        "$dir"/todb.sh "$name" "$columns" "$points"
     done
-    mv "$new" "$old"
+    mv $new $old
 fi
 
-tail +3 /proc/net/dev | tr ':|' '  ' | awk '{print $1,$2,$4,$5,$10,$12,$13}' > "$new"
+tail -n +3 /proc/net/dev | tr ':|' '  ' | awk '{print $1,$2,$4,$5,$10,$12,$13}' > "$new"
